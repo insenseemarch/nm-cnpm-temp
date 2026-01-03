@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@layer base {
+  :root {
+    /* Core System Colors */
+    --color-background: #0a0a0f; /* deep-space-foundation */
+    --color-foreground: #f8f9fa; /* white-cosmic-reading */
+    --color-border: rgba(187, 152, 255, 0.2); /* mystical-purple-border */
+    --color-input: #2d2d5f; /* surface-floating-content */
+    --color-ring: #7262ff; /* cosmic-energy-focus */
+    --color-card: #2d2d5f; /* surface-floating-content */
+    --color-card-foreground: #f8f9fa; /* white-cosmic-reading */
+    --color-popover: #25244c; /* deep-cosmic-foundation */
+    --color-popover-foreground: #f8f9fa; /* white-cosmic-reading */
+    --color-muted: #1a1a2e; /* deeper-space-canvas */
+    --color-muted-foreground: #b8b9c4; /* elegant-hierarchy */
+
+    /* Brand Colors */
+    --color-primary: #25244c; /* deep-cosmic-foundation */
+    --color-primary-foreground: #f8f9fa; /* white-cosmic-reading */
+    --color-secondary: #bb98ff; /* mystical-discovery-moments */
+    --color-secondary-foreground: #25244c; /* deep-cosmic-foundation */
+    --color-accent: #72e9fb; /* celestial-highlights */
+    --color-accent-foreground: #25244c; /* deep-cosmic-foundation */
+
+    /* State Colors */
+    --color-success: #72e9fb; /* positive-cosmic-energy */
+    --color-success-foreground: #25244c; /* deep-cosmic-foundation */
+    --color-warning: #ffd93d; /* gentle-starlight-caution */
+    --color-warning-foreground: #25244c; /* deep-cosmic-foundation */
+    --color-error: #ff6b9d; /* soft-nebula-concern */
+    --color-error-foreground: #f8f9fa; /* white-cosmic-reading */
+    --color-destructive: #ff6b9d; /* soft-nebula-concern */
+    --color-destructive-foreground: #f8f9fa; /* white-cosmic-reading */
+
+    /* Surface Colors */
+    --color-surface: #2d2d5f; /* floating-content-areas */
+    --color-surface-foreground: #f8f9fa; /* white-cosmic-reading */
+
+    /* Text Colors */
+    --color-text-primary: #f8f9fa; /* clear-cosmic-reading */
+    --color-text-secondary: #b8b9c4; /* supporting-information */
+
+    /* Special Brand Colors */
+    --color-cosmic-energy: #7262ff; /* cosmic-energy-conversion */
+    --color-nebula-accent: #f7ddfa; /* soft-nebula-accent */
+    --color-deep-space: #0a0a0f; /* deep-space-foundation */
+    --color-ethereal-lavender: #b8b6d9; /* ethereal-lavender-text */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+  }
+
+  .font-accent {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  .cosmic-glow {
+    box-shadow: 0 0 20px rgba(114, 233, 251, 0.3);
+  }
+
+  .cosmic-glow-hover:hover {
+    box-shadow: 0 0 30px rgba(114, 233, 251, 0.4);
+    transform: scale(1.05);
+  }
+
+  .mystical-border {
+    border: 1px solid rgba(187, 152, 255, 0.2);
+  }
+
+  .floating-content {
+    background: rgba(37, 36, 76, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(187, 152, 255, 0.2);
+  }
+
+  .cosmic-button {
+    background: radial-gradient(circle, #7262ff 0%, #bb98ff 100%);
+    box-shadow: 0 0 20px rgba(114, 98, 255, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .cosmic-button:hover {
+    box-shadow: 0 0 30px rgba(114, 98, 255, 0.6);
+    transform: scale(1.05);
+  }
+
+  .text-cosmic-glow {
+    text-shadow: 0 0 10px rgba(247, 221, 250, 0.3);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-gentle-fade {
+    animation: gentleFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  @keyframes gentleFade {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* React Flow Cosmic Styling */
+  .cosmic-flow .react-flow__background {
+    background: transparent;
+  }
+
+  .cosmic-flow .react-flow__edge path {
+    stroke: #bb98ff;
+    stroke-width: 2;
+  }
+
+  .cosmic-flow .react-flow__edge.react-flow__edge-straight path {
+    stroke: #72e9fb;
+    stroke-width: 3;
+  }
+
+  /* Marriage edge should be white - more specific selector */
+  .cosmic-flow .react-flow__edge-marriage path {
+    stroke: #ffffff !important;
+    stroke-width: 3 !important;
+  }
+
+  /* Parent-child edge should be white */
+  .cosmic-flow .react-flow__edge-parent-child path {
+    stroke: #ffffff !important;
+    stroke-width: 2 !important;
+  }
+
+  .cosmic-controls button {
+    background: rgba(37, 36, 76, 0.8) !important;
+    border: 1px solid rgba(187, 152, 255, 0.3) !important;
+    color: #f8f9fa !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .cosmic-controls button:hover {
+    background: rgba(37, 36, 76, 0.9) !important;
+    border-color: rgba(187, 152, 255, 0.5) !important;
+  }
+
+  .cosmic-minimap {
+    background: rgba(37, 36, 76, 0.8) !important;
+    border: 1px solid rgba(187, 152, 255, 0.3) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Custom Scrollbar for Notification Dropdown */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(45, 45, 95, 0.3);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #bb98ff 0%, #72e9fb 100%);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #72e9fb 0%, #bb98ff 100%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

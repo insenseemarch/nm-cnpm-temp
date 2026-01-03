@@ -1,0 +1,369 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Authentication & Profile
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String  
+  avatar    String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  adminOfFamilies   Family[]              @relation("FamilyAdmin")
+  memberOfFamilies  Family[]              @relation("FamilyUsers")
+  linkedMembers     FamilyMember[]        // When user links to existing member (one-to-many)
+  joinRequests      FamilyJoinRequest[]
+  approvedRequests  FamilyJoinRequest[]   @relation("ApprovedJoinRequests")
+  memberRequests    MemberRequest[]
+  events            Event[]
+  confessions       Confession[]
+  achievements      Achievement[]
+  notifications     Notification[]
+  sentNotifications Notification[]        @relation("NotificationSender")
+
+  @@map("users")
+}
+
+// Family Tree Core
+model Family {
+  id          String   @id // 4-digit auto-generated unique code
+  name        String   // Family/surname name
+  description String?
+  adminId     String   // Current admin of the family
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  admin           User                @relation("FamilyAdmin", fields: [adminId], references: [id])
+  members         FamilyMember[]
+  joinRequests    FamilyJoinRequest[]
+  memberRequests  MemberRequest[]     // Pending member additions/edits/removes
+  events          Event[]
+  confessions     Confession[]      
+  achievements    Achievement[]
+  notifications   Notification[]
+  
+  // Users who are part of this family (approved members)
+  users           User[]              @relation("FamilyUsers")
+
+  @@map("families")
+}
+
+// Join requests for families
+model FamilyJoinRequest {
+  id        String            @id @default(cuid())
+  familyId  String
+  userId    String
+  status    JoinRequestStatus @default(PENDING)
+  message   String?           // Optional message from requester
+  
+  // Admin approval data
+  approvalData Json?           // Store admin linking choices and metadata
+  approvedBy   String?         // Admin who approved
+  approvedAt   DateTime?
+  
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver User? @relation("ApprovedJoinRequests", fields: [approvedBy], references: [id])
+
+  @@unique([familyId, userId])
+  @@map("family_join_requests")
+}
+
+// Requests for adding/editing family members (needs admin approval)
+model MemberRequest {
+  id        String               @id @default(cuid())
+  familyId  String
+  requesterId String             // Who made the request
+  type      MemberRequestType    
+  status    RequestStatus        @default(PENDING)
+  
+  // Member data (for ADD or EDIT requests)
+  memberData Json                // Flexible JSON for member information
+  targetMemberId String?         // For EDIT/DELETE requests
+  
+  message   String?              // Optional message/reason
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  // Relations
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  requester User   @relation(fields: [requesterId], references: [id])
+
+  @@map("member_requests")
+}
+
+model FamilyMember {
+  id          String    @id @default(cuid())
+  familyId    String
+  linkedUserId String? // Link to User account (when they join app)
+    @@unique([familyId, linkedUserId], map: "family_linked_user_unique")
+  
+  // Basic member information
+  name        String
+  email       String?   // Nullable - can update after user linked 
+  gender      Gender
+  birthDate   DateTime?
+  occupation  String?   // Hardcoded in frontend (15 options + "Khác")
+  customOccupation String? // When occupation = "Khác"
+  hometown    String?  
+  currentAddress String? 
+  maritalStatus MaritalStatus @default(SINGLE)
+  marriageDate  DateTime?     // Date when member got married
+  generation  Int      
+  
+  // Relationship context with "thành viên gốc"
+  baseMemberId    String?        // "Thành viên gốc" reference
+  relationshipType RelationshipType? // SPOUSE, CHILD
+  childOrder      Int?           // Con thứ mấy (nullable, chỉ khi type=CHILD)
+  
+  // Death information
+  deathDate       DateTime?
+  burialLocation  String?       // Hardcoded (3 options + "Khác")
+  customBurialLocation String?   // When burialLocation = "Khác"
+  deathCause      String?       // Hardcoded (12 options + "Khác")
+  customDeathCause String?      // When deathCause = "Khác"
+  
+  // Current family relationships (auto-derived từ workflow)
+  fatherId    String?
+  motherId    String?
+  spouseId    String?   @unique // Current spouse (one-to-one)
+  
+  // Store deleted relationship data for restore
+  deletedData Json?     // Store original relationships when soft deleted
+  
+  // Metadata
+  avatar      String?
+  bio         String?
+  isVerified  Boolean   @default(false) // True when linked user confirms
+  isDeleted   Boolean   @default(false) // Soft delete - hide from frontend
+  deletedAt   DateTime? // When member was soft deleted
+  deletedBy   String?   // Who deleted this member
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  family       Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  linkedUser   User?         @relation(fields: [linkedUserId], references: [id])
+  
+  // Relationship with "thành viên gốc"
+  baseMember   FamilyMember? @relation("BaseMemberRelation", fields: [baseMemberId], references: [id])
+  relatedMembers FamilyMember[] @relation("BaseMemberRelation")
+  
+  // Parent relationships
+  father       FamilyMember? @relation("FatherChildren", fields: [fatherId], references: [id])
+  mother       FamilyMember? @relation("MotherChildren", fields: [motherId], references: [id])
+  
+  // Spouse relationship (mutual)
+  spouse       FamilyMember? @relation("SpouseRelation", fields: [spouseId], references: [id])
+  
+  // Inverse relations - children and spouse
+  fatherChildren FamilyMember[] @relation("FatherChildren")
+  motherChildren FamilyMember[] @relation("MotherChildren") 
+  spouseOf       FamilyMember?  @relation("SpouseRelation")
+
+  // Address history
+  addresses    Address[]
+  
+  // Member-specific achievements
+  memberAchievements MemberAchievement[]
+
+  @@unique([familyId, email], map: "family_email_unique")
+  @@index([email], map: "member_email_index")
+  @@map("family_members")
+}
+
+// Events & Milestones
+model Event {
+  id          String    @id @default(cuid())
+  familyId    String
+  createdBy   String
+  title       String   
+  eventType   String   
+  eventDate   DateTime  
+  reminder    String?  
+  description String?   
+  // Removed isPublic - all events are visible to all family members
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  family  Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdBy], references: [id])
+
+  @@map("events")
+}
+
+// Confessions (Family-scoped)
+model Confession {
+  id          String   @id @default(cuid())
+  familyId    String   // Confession belongs to specific family
+  authorId    String
+  content     String
+  isAnonymous Boolean  @default(false) // Anonymous within family
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@map("confessions")
+}
+
+// Achievements & Recognition (Family-specific)
+model Achievement {
+  id          String   @id @default(cuid())
+  familyId    String   // Achievement belongs to specific family
+  createdBy   String
+  title       String
+  description String?  // Simple description
+  category    String   // Hardcoded (10 options + "Khác")
+  customCategory String? // When category = "Khác"
+  achievedBy  String   // Family member name or organization
+  achievedAt  DateTime
+  images      String[] // Multiple images
+  likes       String[] // Array of user IDs who liked (simple reaction)
+  // Removed isPublic - all achievements visible to family members
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  family  Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdBy], references: [id])
+
+  @@map("achievements")
+}
+
+// Member-specific Achievements (linked to individual family members)
+model MemberAchievement {
+  id          String   @id @default(cuid())
+  memberId    String   // Link to specific family member
+  title       String
+  description String?
+  category    String   // Hardcoded (10 options + "Khác")
+  customCategory String? // When category = "Khác"
+  achievedAt  DateTime
+  images      String[] // Multiple images
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  member FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("member_achievements")
+}
+
+// Notification System
+model Notification {
+  id          String           @id @default(cuid())
+  familyId    String?          // Family-related notifications
+  userId      String           // Recipient
+  senderId    String?          // Who triggered the notification
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?            // Additional data (IDs, links, etc.)
+  isRead      Boolean          @default(false)
+  scheduledFor DateTime?       // For event reminders
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  family Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender User?   @relation("NotificationSender", fields: [senderId], references: [id])
+
+  @@map("notifications")
+}
+
+// Address History
+model Address {
+  id        String    @id @default(cuid())
+  memberId  String
+  address   String
+  type      AddressType @default(CURRENT)
+  fromDate  DateTime?
+  toDate    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  member FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+// Enums
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE      
+  MARRIED    
+  DIVORCED   
+}
+
+enum RelationshipType {
+  SPOUSE     
+  CHILD      
+}
+
+enum AddressType {
+  CURRENT   
+  PREVIOUS    
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MemberRequestType {
+  ADD_MEMBER
+  EDIT_MEMBER
+  DELETE_MEMBER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  JOIN_REQUEST       // Someone wants to join family
+  JOIN_APPROVED      // Join request approved
+  JOIN_REJECTED      // Join request rejected
+  MEMBER_REQUEST     // Add/edit member request
+  MEMBER_APPROVED    // Member request approved
+  MEMBER_REJECTED    // Member request rejected
+  EVENT_REMINDER     // Upcoming event reminder
+  NEW_ACHIEVEMENT    // New achievement posted
+  ADMIN_TRANSFER     // Admin role transferred
+  BIRTHDAY_REMINDER  // Family member birthday
+  ANNIVERSARY_REMINDER // Family anniversary
+}

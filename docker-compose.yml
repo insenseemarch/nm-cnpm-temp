@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: family-tree-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env.docker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      # Optional: mount for development (uncomment if needed)
+      # - ./backend/src:/app/src:ro
+      - /app/node_modules
+    networks:
+      - family-tree-network
+
+  # Placeholder for frontend (will add later)
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: family-tree-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - family-tree-network
+
+networks:
+  family-tree-network:
+    driver: bridge
+
+volumes:
+  node_modules:

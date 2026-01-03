@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: family-tree-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env.docker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      # Mount source code for development hot reload
+      - ./backend/src:/app/src:ro
+      - ./backend/prisma:/app/prisma:ro
+      # Exclude node_modules from host
+      - /app/node_modules
+    networks:
+      - family-tree-network
+    # Override CMD to use nodemon for development
+    command: ["npx", "nodemon", "--exec", "npx", "ts-node", "src/server.ts"]
+
+  # Production backend (uncomment for production)
+  # backend-prod:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: family-tree-backend-prod
+  #   ports:
+  #     - "5000:5000"
+  #   env_file:
+  #     - ./backend/.env.docker
+  #   restart: unless-stopped
+  #   networks:
+  #     - family-tree-network
+
+networks:
+  family-tree-network:
+    driver: bridge
+
+volumes:
+  node_modules:
