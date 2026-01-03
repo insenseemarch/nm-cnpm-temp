@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { User, Award, Settings, ArrowLeft, Camera, Lock, LogOut, Save, Mail, Upload, AlertCircle } from 'lucide-react';
 // Import hook Auth thật của bạn (sửa đường dẫn nếu cần)
 import { useAuth } from '../../contexts/AuthContext'; 
+import { changePasswordAPI } from '../../services/authService';
 
 export default function UserProfile() {
   
@@ -45,15 +46,25 @@ export default function UserProfile() {
  
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (passwordForm.new !== passwordForm.confirm) return alert("Mật khẩu không khớp!");
+    
+    if (passwordForm.new !== passwordForm.confirm) {
+        return alert("Mật khẩu nhập lại không khớp!");
+    }
     
     setIsLoading(true);
     try {
-      // await changePasswordApi(passwordForm);
+      await changePasswordAPI({
+        oldPassword: passwordForm.current,
+        newPassword: passwordForm.new
+      });
+
       alert("Đổi mật khẩu thành công!");
       setPasswordForm({ current: '', new: '', confirm: '' });
+      
     } catch (error) {
-      alert("Lỗi đổi mật khẩu");
+      console.error("Change password error:", error);
+      const errorMessage = error.response?.data?.error || "Lỗi đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu cũ.";
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }

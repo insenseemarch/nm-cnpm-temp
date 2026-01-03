@@ -159,4 +159,48 @@ export class AuthController {
             });
         }
     }
+    /**
+     * PUT /api/auth/change-password
+     * Change user password (protected route)
+     */
+    async changePassword(req: Request, res: Response) {
+        try {
+            // Check if the user is already logged in
+            if (!req.user) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const { oldPassword, newPassword } = req.body;
+
+            if (!oldPassword || !newPassword) {
+                return res.status(400).json({
+                    error: 'Old password and new password are required'
+                });
+            }
+
+            if (oldPassword === newPassword) {
+                 return res.status(400).json({
+                    error: 'New password must be different from old password'
+                });
+            }
+
+            await authService.changePassword(req.user.id, { oldPassword, newPassword });
+
+            return res.status(200).json({
+                message: 'Password updated successfully'
+            });
+        } catch (error: any) {
+            console.error('Change password error:', error);
+
+            if (error.message === 'Invalid old password') {
+                return res.status(400).json({
+                    error: error.message
+                });
+            }
+
+            return res.status(400).json({
+                error: error.message || 'Failed to update password'
+            });
+        }
+    }
 }

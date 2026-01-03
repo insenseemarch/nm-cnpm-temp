@@ -218,4 +218,41 @@ router.get('/profile', authenticateToken, (req, res) => authController.getProfil
  */
 router.put('/profile', authenticateToken, (req, res) => authController.updateProfile(req, res));
 
+/**
+ * @swagger
+ * /api/auth/change-password:
+ * put:
+ * summary: Change user password
+ * tags: [Authentication]
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required:
+ * - oldPassword
+ * - newPassword
+ * properties:
+ * oldPassword:
+ * type: string
+ * format: password
+ * example: oldPassword123
+ * newPassword:
+ * type: string
+ * format: password
+ * minLength: 6
+ * example: newPassword123
+ * responses:
+ * 200:
+ * description: Password updated successfully
+ * 400:
+ * description: Invalid input or old password incorrect
+ * 401:
+ * description: Unauthorized
+ */
+router.put('/change-password', authenticateToken, (req, res) => authController.changePassword(req, res));
+
 export default router;

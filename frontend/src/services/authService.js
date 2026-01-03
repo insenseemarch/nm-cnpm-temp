@@ -60,3 +60,8 @@ export const getProfileAPI = () => {
 //   return api.post('/auth/forgot-password', { email });
 // };
 
+// 7. Update Password
+export const changePasswordAPI = (data) => {
+  // data gồm: { oldPassword, newPassword }
+  return api.put('/auth/change-password', data);
+};

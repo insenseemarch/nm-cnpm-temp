@@ -230,4 +230,42 @@ export class AuthService {
             throw new Error("Google authentication failed");
         }
     }
+
+    /**
+     * Change user password
+     */
+    async changePassword(userId: string, data: { oldPassword: string; newPassword: string }) {
+        // Find user
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        // Check if the user has a password
+        if (!user.password) {
+             throw new Error("Account uses external login (Google). Please set a password first.");
+        }
+
+        // Verify old password
+        const isValidPassword = await bcrypt.compare(data.oldPassword, user.password);
+        if (!isValidPassword) {
+            throw new Error("Invalid old password");
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+
+        // Update password
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                password: hashedPassword,
+            },
+        });
+
+        return { message: "Password updated successfully" };
+    }
 }
