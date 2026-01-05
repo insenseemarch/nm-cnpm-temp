@@ -1,23 +1,28 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User, Award, Settings, ArrowLeft, Camera, Lock, LogOut, Save, Mail, Upload, AlertCircle } from 'lucide-react';
-// Import hook Auth thật của bạn (sửa đường dẫn nếu cần)
 import { useAuth } from '../../contexts/AuthContext'; 
 import { changePasswordAPI } from '../../services/authService';
+
+const DEFAULT_AVATAR = "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg";
 
 export default function UserProfile() {
   
   const { user, updateProfileImage, logout } = useAuth(); 
+
+  useEffect(() => {
+    console.log("Dữ liệu user trong UserProfile:", user);
+  }, [user]);
   
   const [tab, setTab] = useState('overview');
   const fileInputRef = useRef(null);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
-
+  const userData = user?.data || user || {};
 
   const safeUser = {
-    name: user?.name || 'Người dùng',
-    email: user?.email || 'Chưa cập nhật',
-    avatar: user?.avatar || 'https://via.placeholder.com/150', 
+    name: userData?.name || userData?.email || 'Người dùng',
+    email: userData?.email || userData?.username || 'Chưa cập nhật',
+    avatar: user?.avatar || DEFAULT_AVATAR, 
     role: user?.role || 'Thành viên',
     joinDate: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'Mới tham gia',
     provider: user?.provider || 'email', 
@@ -33,13 +38,21 @@ export default function UserProfile() {
   
   const isGoogleAccount = safeUser.provider === 'google'; 
 
-  
-  const handleAvatarChange = (e) => {
+  const [avatarPreview, setAvatarPreview] = useState(null);
+
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      
       const previewUrl = URL.createObjectURL(file);
-      updateProfileImage(previewUrl); 
+      setAvatarPreview(previewUrl);
+      try {
+        if (updateProfileImage) {
+            await updateProfileImage(file); 
+        }
+      } catch (error) {
+        console.error("Lỗi upload ảnh:", error);
+        alert("Không thể cập nhật ảnh đại diện.");
+      } 
     }
   };
 
@@ -92,7 +105,11 @@ export default function UserProfile() {
         {/* --- HEADER --- */}
         <div className="flex flex-col md:flex-row gap-6 items-center md:items-start relative z-10">
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
-            <img src={safeUser.avatar} alt="avatar" className="w-28 h-28 rounded-full object-cover border-2 border-purple-400 group-hover:opacity-80 transition" />
+            <img 
+                src={avatarPreview || safeUser.avatar} 
+                alt="User Avatar" 
+                className="w-28 h-28 rounded-full object-cover border-2 border-purple-400 group-hover:opacity-80 transition" 
+            />
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition duration-300">
               <Camera size={24} className="text-white" />
             </div>
